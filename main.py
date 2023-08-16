@@ -30,6 +30,7 @@ class App:
                 "Violin plot x2":                            lambda df, xy: px.violin    (df, x=xy[0], y=xy[1]),
                 "Box plot x2":                               lambda df, xy: px.box       (df, x=xy[0], y=xy[1]),
                 "Scatter plot":                              lambda df, xy: px.scatter   (df, x=xy[0], y=xy[1]),
+                "Pie chart":                                 lambda df, xy: px.pie       (df, values=xy[0], names=xy[1]),
             },
             3: {
                 "Scatter plot + color":                      lambda df, xy: px.scatter   (df, x=xy[0], y=xy[1], color=xy[2]),
