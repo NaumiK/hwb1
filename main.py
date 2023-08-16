@@ -58,10 +58,11 @@ class App:
     def main(self) -> None:
         st.title("Промежуточная аттестация")
         self.upload_dataframe()
-        self.show_info()
         if self.dataframe is not None:
-            plot_agree = st.checkbox("Plot")
-            if plot_agree: self.plot()
+            check_show_info = st.checkbox("Info")
+            if check_show_info: self.show_info()
+            check_show_plot = st.checkbox("Plot")
+            if check_show_plot: self.plot()
 
 
 if __name__ == "__main__":
