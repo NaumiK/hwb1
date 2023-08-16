@@ -17,13 +17,22 @@ class App:
     plot_functions: dict[int: dict[str: Callable[[pd.DataFrame, tuple[str]], go.Figure | None]]] = {
             # Default 
             0: {
-                "Corr Heatmap":     lambda df, xy: App.__check_category(df, xy, 
-                                        lambda a, b: px.imshow (a[list(b)].corr())),
+                "Corr Heatmap":                             lambda df, xy: App.__check_category(df, xy, 
+                                                                lambda a, b: px.imshow (a[list(b)].corr())),
+            },
+            1: {
+                "Box plot":                                  lambda df, xy: px.box       (df, x=xy[0]),
+                "Violin plot":                               lambda df, xy: px.violin    (df, x=xy[0]),
+                "Histogram plot":                            lambda df, xy: px.histogram (df, x=xy[0]),
+                "Density histogram":                         lambda df, xy: px.histogram (df, x=xy[0], histnorm="probability density")
             },
             2: {
-                "Violin plot x2":   lambda df, xy: px.violin    (df, x=xy[0], y=xy[1]),
-                "Box plot x2":      lambda df, xy: px.box       (df, x=xy[0], y=xy[1]),
-                "Scatter plot":     lambda df, xy: px.scatter   (df, x=xy[0], y=xy[1]),
+                "Violin plot x2":                            lambda df, xy: px.violin    (df, x=xy[0], y=xy[1]),
+                "Box plot x2":                               lambda df, xy: px.box       (df, x=xy[0], y=xy[1]),
+                "Scatter plot":                              lambda df, xy: px.scatter   (df, x=xy[0], y=xy[1]),
+            },
+            3: {
+                "Scatter plot + color":                      lambda df, xy: px.scatter   (df, x=xy[0], y=xy[1], color=xy[2]),
             },
         }
 
