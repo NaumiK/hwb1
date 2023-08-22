@@ -63,10 +63,15 @@ class App:
     def choose_columns(self, dimension: int) -> tuple[str]:
         if self.column_type is None: return
         return tuple(st.selectbox(f"Column {i + 1}", self.column_type.index) for i in range(dimension))
+    
+    def choose_selection(self, dimension: int) -> tuple[(str, str)]:
+        if self.column_type is None: return
+        return tuple((st.text_input(f"Query {i + 1}"), st.selectbox(f"Column {i + 1}", self.column_type.index)) for i in range(dimension))
 
     def plot(self) -> None:
         st.header("Plot")
         if self.column_type is None: return
+        query = st.text_input("Query")
         dimension = st.number_input("Set dimension", min_value=1)
         cols = self.choose_columns(dimension)
         if cols is not None:
@@ -74,11 +79,12 @@ class App:
                                         (list(App.plot_functions[dimension].keys()) if dimension in App.plot_functions else []) + 
                                         list(App.plot_functions[0].keys()))
             draw_plot = st.button("Plot!")
+            accepted_query_df = self.dataframe.query(query) if query else self.dataframe
             if draw_plot:
                 if dimension in App.plot_functions and type_of_plot in App.plot_functions[dimension]:
-                    fig = App.plot_functions[dimension][type_of_plot](self.dataframe, cols)
+                    fig = App.plot_functions[dimension][type_of_plot](accepted_query_df, cols)
                 else:
-                    fig = App.plot_functions[0][type_of_plot](self.dataframe, cols)
+                    fig = App.plot_functions[0][type_of_plot](accepted_query_df, cols)
                 if fig is not None: st.plotly_chart(fig)
 
     def main(self) -> None:
