@@ -194,7 +194,6 @@ class App:
         if self.column_type is None:
             return
         st.header("A/B test")
-        st.write("Составление 2-х выборок:")
         col1, col2 = self.choose_selection(2)
         type_of_test = st.selectbox("Type of test", App.test_functions.keys())
         if col1 is not None and col2 is not None:
