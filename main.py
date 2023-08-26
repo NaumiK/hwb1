@@ -5,9 +5,12 @@ import numpy as np, scipy as sp
 import plotly.express as px
 import plotly.graph_objects as go
 
+
 class App:
     __numerics = ["int16", "int32", "int64", "float16", "float32", "float64"]
-    def __check_category(df: pd.DataFrame, xy: tuple[str], func: Callable[[pd.DataFrame, tuple[str]], go.Figure]) -> go.Figure | None:
+
+    def __check_category(df: pd.DataFrame, xy: tuple[str],
+                         func: Callable[[pd.DataFrame, tuple[str]], go.Figure]) -> go.Figure | None:
         if all(map(lambda x: df.dtypes[x] in App.__numerics, xy)):
             return func(df, xy)
         else:
@@ -26,8 +29,7 @@ class App:
                 "Histogram plot":                            lambda df, xy: px.histogram (df, x=xy[0]),
                 "Density histogram":                         lambda df, xy: px.histogram (df, x=xy[0], histnorm="probability density")
             },
-            2: {
-                "Violin plot x2":                            lambda df, xy: px.violin    (df, x=xy[0], y=xy[1]),
+            2: { "Violin plot x2":                            lambda df, xy: px.violin    (df, x=xy[0], y=xy[1]),
                 "Box plot x2":                               lambda df, xy: px.box       (df, x=xy[0], y=xy[1]),
                 "Scatter plot":                              lambda df, xy: px.scatter   (df, x=xy[0], y=xy[1]),
                 "Pie chart":                                 lambda df, xy: px.pie       (df, values=xy[0], names=xy[1]),
@@ -37,10 +39,20 @@ class App:
             },
         }
 
+    def ttest(col1, col2) -> None:
+        st.write("T-Test")
+        try:
+            st.write(sp.stats.ttest_ind(col1, col2))
+        except Exception as e:
+            st.error(f"Wrong input data: {e}")
+
+    test_functions: dict[str, Callable] = {
+            "T-Test": ttest,
+        }
+
     def __init__(self) -> None:
         self.dataframe:     pd.DataFrame    = None
         self.column_type:   pd.Series       = None
-        
 
     def upload_dataframe(self) -> None: 
         upload_file = st.file_uploader("Choose a file")
@@ -62,8 +74,10 @@ class App:
 
     def choose_columns(self, dimension: int) -> tuple[str]:
         if self.column_type is None: return
-        return tuple(st.selectbox(f"Column {i + 1}", self.column_type.index) for i in range(dimension))
-    
+        return tuple(st.selectbox(
+            f"Column {i + 1}",
+            self.column_type.index) for i in range(dimension))
+
     def choose_selection(self, dimension: int) -> tuple[(str, str)]:
         if self.column_type is None: return
         return tuple((st.text_input(f"Query {i + 1}"), st.selectbox(f"Column {i + 1}", self.column_type.index)) for i in range(dimension))
@@ -79,13 +93,34 @@ class App:
                                         (list(App.plot_functions[dimension].keys()) if dimension in App.plot_functions else []) + 
                                         list(App.plot_functions[0].keys()))
             draw_plot = st.button("Plot!")
-            accepted_query_df = self.dataframe.query(query) if query else self.dataframe
+            accepted_query_df = App.query_df(self.dataframe, query)
             if draw_plot:
                 if dimension in App.plot_functions and type_of_plot in App.plot_functions[dimension]:
                     fig = App.plot_functions[dimension][type_of_plot](accepted_query_df, cols)
                 else:
                     fig = App.plot_functions[0][type_of_plot](accepted_query_df, cols)
                 if fig is not None: st.plotly_chart(fig)
+
+    def query_df(df: pd.DataFrame, query: str) -> pd.DataFrame | None:
+        res = None
+        try:
+            res = df.query(query) if query else df
+        except Exception as e:
+            st.error(f"Wrong query, \n {e}")
+        return res
+
+    def query_column(self, query: str, column: str) -> pd.Series:
+        return App.query_df(self.dataframe, query)[column]
+
+    def a_b_test(self) -> None:
+        if self.column_type is None: return
+        st.header("A/B test")
+        col1, col2 = self.choose_selection(2)
+        type_of_test = st.selectbox("Type of test", App.test_functions.keys())
+        confirm = st.button("Confirm")
+        if confirm and col1 is not None and col2 is not None:
+            App.test_functions[type_of_test](self.query_column(*col1),
+                                             self.query_column(*col2))
 
     def main(self) -> None:
         st.title("Промежуточная аттестация")
@@ -95,6 +130,8 @@ class App:
             if check_show_info: self.show_info()
             check_show_plot = st.checkbox("Plot")
             if check_show_plot: self.plot()
+            check_show_ab_t = st.checkbox("A/B test")
+            if check_show_ab_t: self.a_b_test()
 
 
 if __name__ == "__main__":
