@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 
 class App:
     __numerics = ["int16", "int32", "int64", "float16", "float32", "float64"]
+    col_key = 0
 
     def __check_category(df: pd.DataFrame, xy: tuple[str],
                          func: Callable[[pd.DataFrame, tuple[str]], go.Figure]) -> go.Figure | None:
@@ -40,18 +41,52 @@ class App:
         }
 
     def ttest(col1: pd.Series, col2: pd.Series) -> None:
-        st.write("T-Test")
-        try:
-            st.write(sp.stats.ttest_ind(col1.dropna(), col2.dropna(), equal_var=False))
-        except Exception as e:
-            st.error(f"Wrong input data: {e}")
+        st.subheader("T-Test")
+        st.write(r"Let $X_1, \dots, X_{n_1} \sim N(\mu_1, \sigma_1)$, $Y_1, \dots, Y_{n_2} \sim N(\mu_2, \sigma_2)$")
+        st.write(r"$H_0 \colon \mathbb{E}X=\mathbb{E}Y$")
+        alternatives = {
+                r"𝔼X ≠ 𝔼Y": "two-sided", r"𝔼X > 𝔼Y": "greater", r"𝔼X < 𝔼Y": "less"
+                }
+        alternative_choice =\
+            alternatives[st.selectbox(r"$H_1 \colon$", alternatives.keys())]
+        st.write(r"$\alpha: 0.05$")
+        confirm = st.button("Confirm", key="T-Test confirm")
+        if confirm:
+            try:
+                _, p_value = sp.stats.ttest_ind(col1.dropna(), col2.dropna(), equal_var=False, alternative=alternative_choice)
+                st.write(f"p-value: {p_value}")
+                if p_value < 0.05:
+                    st.write(r"Поскольку $\text{p-value} < 0,05$, мы отвергаем нулевую гипотезу ($H_0 \colon \mathbb{E}X=\mathbb{E}Y$).")
+                else:
+                    st.write(r"Поскольку $\text{p-value} > 0,05$, мы не отвергаем нулевую гипотезу ($H_0 \colon \mathbb{E}X=\mathbb{E}Y$).")
+
+            except Exception as e:
+                st.error(f"Wrong input data: {e}")
 
     def utest(col1: pd.Series, col2: pd.Series) -> None:
         st.write("U-Test")
-        try:
-            st.write(sp.stats.mannwhitneyu(col1.dropna(), col2.dropna()))
-        except Exception as e:
-            st.error(f"Wrong input data: {e}")
+        st.write(r"$H_0 \colon A=B$ ")
+        alternatives = {
+                r"A ≠ B": "two-sided",
+                r"A > B": "greater",
+                r"A < B": "less"
+                }
+        alternative_choice =\
+            alternatives[st.selectbox(r"$H_1 \colon$", alternatives.keys())]
+        st.write(r"$\alpha: 0.05$")
+        confirm = st.button("Confirm", key="T-Test confirm")
+        if confirm:
+            try:
+                _, p_value = sp.stats.mannwhitneyu(col1.dropna(), col2.dropna(), alternative=alternative_choice)
+                st.write(f"p-value: {p_value}")
+                if p_value < 0.05:
+                    st.write(r"Поскольку $\text{p-value} > 0,05$, мы отвергаем нулевую гипотезу ($A = B$).")
+                else:
+                    st.write(r"Поскольку $\text{p-value} < 0,05$, мы не отвергаем нулевую гипотезу ($A = B$).")
+
+            except Exception as e:
+                st.error(f"Wrong input data: {e}")
+
 
     test_functions: dict[str, Callable] = {
             "T-Test": ttest,
@@ -84,11 +119,14 @@ class App:
         if self.column_type is None: return
         return tuple(st.selectbox(
             f"Column {i + 1}",
-            self.column_type.index) for i in range(dimension))
+            self.column_type.index,
+            key=str(i + dimension * App.col_key)) for i in range(dimension))
+
 
     def choose_selection(self, dimension: int) -> tuple[(str, str)]:
         if self.column_type is None: return
-        return tuple((st.text_input(f"Query {i + 1}"), st.selectbox(f"Column {i + 1}", self.column_type.index)) for i in range(dimension))
+        App.col_key += 1
+        return tuple((st.text_input(f"Query {i + 1}"), st.selectbox(f"Column {i + 1}", self.column_type.index, key=str(i + dimension * App.col_key))) for i in range(dimension))
 
     def plot(self) -> None:
         st.header("Plot")
@@ -123,10 +161,10 @@ class App:
     def a_b_test(self) -> None:
         if self.column_type is None: return
         st.header("A/B test")
+        st.write("Составление 2-х выборок:")
         col1, col2 = self.choose_selection(2)
         type_of_test = st.selectbox("Type of test", App.test_functions.keys())
-        confirm = st.button("Confirm")
-        if confirm and col1 is not None and col2 is not None:
+        if col1 is not None and col2 is not None:
             App.test_functions[type_of_test](self.query_column(*col1),
                                              self.query_column(*col2))
 
