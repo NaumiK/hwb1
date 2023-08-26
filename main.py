@@ -18,7 +18,7 @@ class App:
             return None
 
     plot_functions: dict[int: dict[str: Callable[[pd.DataFrame, tuple[str]], go.Figure | None]]] = {
-            # Default 
+            # Default
             0: {
                 "Corr Heatmap":                             lambda df, xy: App.__check_category(df, xy, 
                                                                 lambda a, b: px.imshow (a[list(b)].corr())),
@@ -29,7 +29,7 @@ class App:
                 "Histogram plot":                            lambda df, xy: px.histogram (df, x=xy[0]),
                 "Density histogram":                         lambda df, xy: px.histogram (df, x=xy[0], histnorm="probability density")
             },
-            2: { "Violin plot x2":                            lambda df, xy: px.violin    (df, x=xy[0], y=xy[1]),
+            2: { "Violin plot x2":                           lambda df, xy: px.violin    (df, x=xy[0], y=xy[1]),
                 "Box plot x2":                               lambda df, xy: px.box       (df, x=xy[0], y=xy[1]),
                 "Scatter plot":                              lambda df, xy: px.scatter   (df, x=xy[0], y=xy[1]),
                 "Pie chart":                                 lambda df, xy: px.pie       (df, values=xy[0], names=xy[1]),
@@ -39,25 +39,33 @@ class App:
             },
         }
 
-    def ttest(col1, col2) -> None:
+    def ttest(col1: pd.Series, col2: pd.Series) -> None:
         st.write("T-Test")
         try:
-            st.write(sp.stats.ttest_ind(col1, col2))
+            st.write(sp.stats.ttest_ind(col1.dropna(), col2.dropna(), equal_var=False))
+        except Exception as e:
+            st.error(f"Wrong input data: {e}")
+
+    def utest(col1: pd.Series, col2: pd.Series) -> None:
+        st.write("U-Test")
+        try:
+            st.write(sp.stats.mannwhitneyu(col1.dropna(), col2.dropna()))
         except Exception as e:
             st.error(f"Wrong input data: {e}")
 
     test_functions: dict[str, Callable] = {
             "T-Test": ttest,
+            "U-Test": utest,
         }
 
     def __init__(self) -> None:
         self.dataframe:     pd.DataFrame    = None
         self.column_type:   pd.Series       = None
 
-    def upload_dataframe(self) -> None: 
+    def upload_dataframe(self) -> None:
         upload_file = st.file_uploader("Choose a file")
         if upload_file is not None:
-            try: 
+            try:
                 self.dataframe = pd.read_csv(upload_file)
                 self.column_type = self.dataframe.dtypes.copy()
             except Exception as e:
