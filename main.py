@@ -1,7 +1,7 @@
 from typing import Callable
 import streamlit as st
 import pandas as pd
-import numpy as np, scipy as sp
+import scipy as sp
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -11,32 +11,55 @@ class App:
     col_key = 0
 
     def __check_category(df: pd.DataFrame, xy: tuple[str],
-                         func: Callable[[pd.DataFrame, tuple[str]], go.Figure]) -> go.Figure | None:
+                         func: Callable[[pd.DataFrame, tuple[str]], go.Figure]
+                         ) -> go.Figure | None:
+
         if all(map(lambda x: df.dtypes[x] in App.__numerics, xy)):
             return func(df, xy)
         else:
             st.error("Column type must be numeric, check out INFO section")
             return None
 
-    plot_functions: dict[int: dict[str: Callable[[pd.DataFrame, tuple[str]], go.Figure | None]]] = {
+    plot_functions: dict[int:
+                         dict[str:
+                              Callable[[pd.DataFrame, tuple[str]], go.Figure | None]]] = {
             # Default
             0: {
-                "Corr Heatmap":                             lambda df, xy: App.__check_category(df, xy, 
-                                                                lambda a, b: px.imshow (a[list(b)].corr())),
+                "Corr Heatmap": lambda df, xy: App.__check_category(df,
+                                                                    xy,
+                                                                    lambda a, b: px.imshow(a[list(b)].corr())),
             },
             1: {
-                "Box plot":                                  lambda df, xy: px.box       (df, x=xy[0]),
-                "Violin plot":                               lambda df, xy: px.violin    (df, x=xy[0]),
-                "Histogram plot":                            lambda df, xy: px.histogram (df, x=xy[0]),
-                "Density histogram":                         lambda df, xy: px.histogram (df, x=xy[0], histnorm="probability density")
+                "Box plot": lambda df, xy: px.box(df,
+                                                  x=xy[0]),
+                "Violin plot": lambda df, xy: px.violin(df,
+                                                        x=xy[0]),
+                "Histogram plot": lambda df, xy: px.histogram(df,
+                                                              x=xy[0]),
+                "Density histogram": lambda df, xy:
+                px.histogram(df,
+                             x=xy[0],
+                             histnorm="probability density")
             },
-            2: { "Violin plot x2":                           lambda df, xy: px.violin    (df, x=xy[0], y=xy[1]),
-                "Box plot x2":                               lambda df, xy: px.box       (df, x=xy[0], y=xy[1]),
-                "Scatter plot":                              lambda df, xy: px.scatter   (df, x=xy[0], y=xy[1]),
-                "Pie chart":                                 lambda df, xy: px.pie       (df, values=xy[0], names=xy[1]),
+            2: {
+                "Violin plot x2": lambda df, xy: px.violin(df,
+                                                           x=xy[0],
+                                                           y=xy[1]),
+                "Box plot x2": lambda df, xy: px.box(df,
+                                                     x=xy[0],
+                                                     y=xy[1]),
+                "Scatter plot": lambda df, xy: px.scatter(df,
+                                                          x=xy[0],
+                                                          y=xy[1]),
+                "Pie chart": lambda df, xy: px.pie(df,
+                                                   values=xy[0],
+                                                   names=xy[1]),
             },
             3: {
-                "Scatter plot + color":                      lambda df, xy: px.scatter   (df, x=xy[0], y=xy[1], color=xy[2]),
+                "Scatter plot + color": lambda df, xy: px.scatter(df,
+                                                                  x=xy[0],
+                                                                  y=xy[1],
+                                                                  color=xy[2]),
             },
         }
 
@@ -53,7 +76,9 @@ class App:
         confirm = st.button("Confirm", key="T-Test confirm")
         if confirm:
             try:
-                _, p_value = sp.stats.ttest_ind(col1.dropna(), col2.dropna(), equal_var=False, alternative=alternative_choice)
+                _, p_value = sp.stats.ttest_ind(col1.dropna(), col2.dropna(),
+                                                equal_var=False,
+                                                alternative=alternative_choice)
                 st.write(f"p-value: {p_value}")
                 if p_value < 0.05:
                     st.write(r"Поскольку $\text{p-value} < 0,05$, мы отвергаем нулевую гипотезу ($H_0 \colon \mathbb{E}X=\mathbb{E}Y$).")
@@ -70,14 +95,17 @@ class App:
                 r"A ≠ B": "two-sided",
                 r"A > B": "greater",
                 r"A < B": "less"
-                }
-        alternative_choice =\
-            alternatives[st.selectbox(r"$H_1 \colon$", alternatives.keys())]
+                        }
+
+        alternative_choice = alternatives[st.selectbox(r"$H_1 \colon$",
+                                                       alternatives.keys())]
         st.write(r"$\alpha: 0.05$")
-        confirm = st.button("Confirm", key="T-Test confirm")
-        if confirm:
+        if st.button("Confirm", key="T-Test confirm"):
             try:
-                _, p_value = sp.stats.mannwhitneyu(col1.dropna(), col2.dropna(), alternative=alternative_choice)
+                _, p_value = sp.stats.mannwhitneyu(col1.dropna(),
+                                                   col2.dropna(),
+                                                   alternative=alternative_choice
+                                                   )
                 st.write(f"p-value: {p_value}")
                 if p_value < 0.05:
                     st.write(r"Поскольку $\text{p-value} > 0,05$, мы отвергаем нулевую гипотезу ($A = B$).")
@@ -87,15 +115,14 @@ class App:
             except Exception as e:
                 st.error(f"Wrong input data: {e}")
 
-
     test_functions: dict[str, Callable] = {
             "T-Test": ttest,
             "U-Test": utest,
         }
 
     def __init__(self) -> None:
-        self.dataframe:     pd.DataFrame    = None
-        self.column_type:   pd.Series       = None
+        self.dataframe:     pd.DataFrame = None
+        self.column_type:   pd.Series = None
 
     def upload_dataframe(self) -> None:
         upload_file = st.file_uploader("Choose a file")
@@ -108,7 +135,8 @@ class App:
                 self.dataframe = None
 
     def show_info(self) -> None:
-        if self.column_type is None: return
+        if self.column_type is None:
+            return
         info = self.column_type.copy().to_frame()
         info["Cat/Num"] = info[0].map(lambda x: "Number" if x in App.__numerics else "Category")
         info = info.rename(columns={0: "Type"})
@@ -116,27 +144,30 @@ class App:
         del info
 
     def choose_columns(self, dimension: int) -> tuple[str]:
-        if self.column_type is None: return
+        if self.column_type is None:
+            return
         return tuple(st.selectbox(
             f"Column {i + 1}",
             self.column_type.index,
             key=str(i + dimension * App.col_key)) for i in range(dimension))
 
-
     def choose_selection(self, dimension: int) -> tuple[(str, str)]:
-        if self.column_type is None: return
+        if self.column_type is None:
+            return
         App.col_key += 1
         return tuple((st.text_input(f"Query {i + 1}"), st.selectbox(f"Column {i + 1}", self.column_type.index, key=str(i + dimension * App.col_key))) for i in range(dimension))
 
     def plot(self) -> None:
         st.header("Plot")
-        if self.column_type is None: return
+        if self.column_type is None:
+            return
         query = st.text_input("Query")
         dimension = st.number_input("Set dimension", min_value=1)
         cols = self.choose_columns(dimension)
         if cols is not None:
-            type_of_plot = st.selectbox("Type of plot", 
-                                        (list(App.plot_functions[dimension].keys()) if dimension in App.plot_functions else []) + 
+            type_of_plot = st.selectbox("Type of plot",
+                                        (list(App.plot_functions[dimension].keys())
+                                         if dimension in App.plot_functions else []) +
                                         list(App.plot_functions[0].keys()))
             draw_plot = st.button("Plot!")
             accepted_query_df = App.query_df(self.dataframe, query)
@@ -145,7 +176,8 @@ class App:
                     fig = App.plot_functions[dimension][type_of_plot](accepted_query_df, cols)
                 else:
                     fig = App.plot_functions[0][type_of_plot](accepted_query_df, cols)
-                if fig is not None: st.plotly_chart(fig)
+                if fig is not None:
+                    st.plotly_chart(fig)
 
     def query_df(df: pd.DataFrame, query: str) -> pd.DataFrame | None:
         res = None
@@ -159,7 +191,8 @@ class App:
         return App.query_df(self.dataframe, query)[column]
 
     def a_b_test(self) -> None:
-        if self.column_type is None: return
+        if self.column_type is None:
+            return
         st.header("A/B test")
         st.write("Составление 2-х выборок:")
         col1, col2 = self.choose_selection(2)
@@ -173,11 +206,14 @@ class App:
         self.upload_dataframe()
         if self.dataframe is not None:
             check_show_info = st.checkbox("Info")
-            if check_show_info: self.show_info()
+            if check_show_info:
+                self.show_info()
             check_show_plot = st.checkbox("Plot")
-            if check_show_plot: self.plot()
+            if check_show_plot:
+                self.plot()
             check_show_ab_t = st.checkbox("A/B test")
-            if check_show_ab_t: self.a_b_test()
+            if check_show_ab_t:
+                self.a_b_test()
 
 
 if __name__ == "__main__":
